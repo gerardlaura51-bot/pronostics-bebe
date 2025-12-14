@@ -820,7 +820,7 @@
                     <button type="button" class="btn btn-secondary" onclick="goToSection(5)">
                         ← Retour
                     </button>
-                    <button type="submit" class="btn btn-primary">
+                    <button type="button" class="btn btn-primary" onclick="submitForm()">
                         Valider mes pronostics 🎉
                     </button>
                 </div>
@@ -879,6 +879,93 @@
             document.getElementById('progressFill').style.width = progress + '%';
         }
 
+        function validateAllFields() {
+            // Vérifier tous les champs requis
+            const firstName = document.getElementById('firstName').value.trim();
+            const lastName = document.getElementById('lastName').value.trim();
+            const address = document.getElementById('address').value.trim();
+            const babyName = document.getElementById('babyName').value.trim();
+            const birthDate = document.getElementById('birthDate').value;
+            const birthTime = document.getElementById('birthTime').value;
+            const weight = document.getElementById('weight').value;
+            const height = document.getElementById('height').value;
+            const hairColor = document.querySelector('input[name="hairColor"]:checked');
+            const eyeColor = document.querySelector('input[name="eyeColor"]:checked');
+
+            if (!firstName || !lastName || !address) {
+                alert('Veuillez remplir vos informations personnelles (prénom, nom, adresse)');
+                goToSection(1);
+                return false;
+            }
+
+            if (!babyName) {
+                alert('Veuillez entrer le prénom du bébé');
+                goToSection(2);
+                return false;
+            }
+
+            if (!birthDate || !birthTime) {
+                alert('Veuillez entrer la date et l\'heure de naissance');
+                goToSection(3);
+                return false;
+            }
+
+            if (!weight || !height) {
+                alert('Veuillez entrer le poids et la taille');
+                goToSection(4);
+                return false;
+            }
+
+            if (!hairColor) {
+                alert('Veuillez sélectionner la couleur des cheveux');
+                goToSection(5);
+                return false;
+            }
+
+            if (!eyeColor) {
+                alert('Veuillez sélectionner la couleur des yeux');
+                goToSection(6);
+                return false;
+            }
+
+            return true;
+        }
+
+        function submitForm() {
+            if (validateAllFields()) {
+                const formData = getFormData();
+                participants.push(formData);
+                
+                // Store in localStorage
+                localStorage.setItem('babyGuessParticipants', JSON.stringify(participants));
+                
+                // Envoyer vers Google Sheets
+                const googleSheetURL = 'https://script.google.com/macros/s/AKfycbyeMosb-nADbe4TGfO4De5MubdGztNTneFPDeoNrK6xg_lug65VGlM7pHp4rY6FQjMV/exec';
+                
+                fetch(googleSheetURL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                })
+                .then(() => {
+                    console.log('Données envoyées vers Google Sheets avec succès');
+                })
+                .catch((error) => {
+                    console.error('Erreur lors de l\'envoi vers Google Sheets:', error);
+                })
+                .finally(() => {
+                    displaySummary(formData);
+                    goToSection('success');
+                });
+                
+                console.log('Nouvelle participation enregistrée:', formData);
+                console.log('Toutes les participations:', participants);
+            }
+        }
+
         function getFormData() {
             return {
                 firstName: document.getElementById('firstName').value,
@@ -920,42 +1007,6 @@
                 <div class="summary-item"><strong>Couleur des yeux :</strong> ${data.eyeColor}</div>
             `;
         }
-
-        document.getElementById('babyGuessForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const formData = getFormData();
-            participants.push(formData);
-            
-            // Store in localStorage
-            localStorage.setItem('babyGuessParticipants', JSON.stringify(participants));
-            
-            // Envoyer vers Google Sheets
-            const googleSheetURL = 'https://script.google.com/macros/s/AKfycbyeMosb-nADbe4TGfO4De5MubdGztNTneFPDeoNrK6xg_lug65VGlM7pHp4rY6FQjMV/exec';
-            
-            fetch(googleSheetURL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(formData)
-            })
-            .then(() => {
-                console.log('Données envoyées vers Google Sheets avec succès');
-            })
-            .catch((error) => {
-                console.error('Erreur lors de l\'envoi vers Google Sheets:', error);
-                // Afficher quand même le récapitulatif même en cas d'erreur
-            })
-            .finally(() => {
-                displaySummary(formData);
-                goToSection('success');
-            });
-            
-            console.log('Nouvelle participation enregistrée:', formData);
-            console.log('Toutes les participations:', participants);
-        });
 
         // Load existing participants from localStorage on page load
         window.addEventListener('load', function() {
